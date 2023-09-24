@@ -20,6 +20,12 @@
 #include <stdint.h>
 
 #include "GPIO.h"
+#include "FreeRTOS.h"
+#include "task.h"
+
+void LED_Blink(void*);
+
+uint32_t SystemCoreClock = 180000000;
 
 #if !defined(__SOFT_FP__) && defined(__ARM_FP)
   #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
@@ -30,7 +36,7 @@ void delay(uint32_t counter)
 	for(uint32_t i=0; i<counter*1000; i++);
 }
 
-//uint8_t volatile u8_LocPushed = 0u;
+uint8_t volatile u8_LocPushed = 0u;
 
 int main(void)
 {
@@ -60,6 +66,55 @@ int main(void)
 	GPIO_ClockControl(GPIO_eCLKPOS_A, ENABLE);
 	GPIO_Init(GPIOA, &Push_Button);
 
+	/******* Initializing FPU in CPACR *******/
+	uint32_t* CPACR_ptr = (uint32_t*)0xE000ED88;						//Address of CPACR register
+	*CPACR_ptr |= ((3UL << 10*2) | (3UL << 11*2));						//Set coprocessor 10 and 11 to b11
+
+	/* Create FreeRTOS Task */
+	LocRet = xTaskCreate(&LED_Blink, "BlinkTask", 250u, 0, 0, NULL);
+
+    /* Start FreeRTOS Scheduler */
+	vTaskStartScheduler();
+
+/***************Below code does not work properly*****************/
+/*		Find out why?
+ * 		works only when a breakpoint is set in the first 'if' condition (Weird)
+ * 		or if going from off to on works always
+*/
+/*
+		if(GPIO_ReadPin(GPIOA,0U) == 0)
+		{
+			delay(20);
+			u8_LocPushed ^= 1;
+		}
+		else
+		{
+			// Do Nothing
+		}
+
+		if(! u8_LocPushed)
+		{
+			GPIO_WritePin(GPIOC,13u,HIGH);			//LED off
+		}
+		else
+		{
+			for(uint32_t i=0; i<50; i++)			//LED Low intensity on (PWM, kind of)
+			{
+				GPIO_WritePin(GPIOC,13u,HIGH);
+				delay(20);
+				GPIO_WritePin(GPIOC,13u,LOW);
+				delay(1);
+			}
+
+			GPIO_WritePin(GPIOC,13u,HIGH);			//LED off
+			delay(500);
+		}
+*/
+
+}
+
+void LED_Blink(void* arg)
+{
 	for(;;)
 	{
 		if(GPIO_ReadPin(GPIOA,0U))
