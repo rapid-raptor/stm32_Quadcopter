@@ -119,13 +119,11 @@ header file. */
 
 /* Definitions that map the FreeRTOS port interrupt handlers to their CMSIS
 standard names. */
-#if WORKAROUND_PMU_CM001 == 1
-	#define xPortPendSVHandler PendSV_Handler_Veneer
-#else
+#if 0								//Commented bcoz using the FreeRTOS names
 	#define xPortPendSVHandler PendSV_Handler
-#endif
 #define vPortSVCHandler SVC_Handler
 #define xPortSysTickHandler SysTick_Handler
+#endif
 
 /* Demo application specific settings. */
 #if UC_ID == 4502
